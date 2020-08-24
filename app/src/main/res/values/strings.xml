@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Identiface</string>
+    <string name="title_text">Welcome to Identiface!</string>
+    <string name="label_text">Login to continue.</string>
+    <string name="action_button_label">Verify my identity</string>
+    <string name="nricField"></string>
+</resources>
