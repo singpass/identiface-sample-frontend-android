@@ -1,8 +1,11 @@
 package com.ndi.identiface.identifaceandroid;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -51,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private String sessionToken = "";
     private boolean hasSuccessfullyFaceVerified = false;
 
+    private Intent loginIntent;
+
     // RequestQueue manages worker threads for running
     // network operations; reading from and writing to
     // cache, and parsing responses.
@@ -65,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private Button actionButton;
     private TextView labelText;
     private EditText editText;
+    private ProgressBar progressBar;
 
 //  ========== APP VARIABLES SETUP ==========
 
@@ -77,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
         actionButton = findViewById(R.id.actionButton);
         labelText = findViewById(R.id.mainTextLabel);
         editText = findViewById(R.id.nricFieldInput);
+        progressBar = findViewById(R.id.progressBar);
+        loginIntent = new Intent(this, LoggedIn.class);
 
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -97,8 +105,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void actionButtonPressed(View view) {
         if (sessionToken == "") {
+            actionButton.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.INVISIBLE);
             loginWithIdentiface(view);
         } else if (didCallAPIWithNoErrors) {
+            labelText.setText("Verifying... please wait");
+            actionButton.setVisibility(View.INVISIBLE);
             launchSDK(view);
         } else {
             resetSession();
@@ -115,10 +127,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Call getSessionToken API
         getSessionToken(view);
-
-        if (didCallAPIWithNoErrors) {
-            labelText.setText("Ready to scan your face! 123");
-        }
+        return;
     }
 
     @Override
@@ -158,12 +167,14 @@ public class MainActivity extends AppCompatActivity {
                     String token = response.getString("token");
                     sessionToken = token;
 
-                    Snackbar errorSnackbar = Snackbar.make(view, "Success! Click the button to begin facial verification.", 2000);
-                    errorSnackbar.show();
+                    Snackbar snackBar = Snackbar.make(view, "Success! Tap the button to begin facial verification.", 2000);
+                    snackBar.show();
 
                     labelText.setText("Ready to scan your face!");
                     actionButton.setEnabled(true);
                     actionButton.setText("Scan my face");
+                    actionButton.setBackgroundTintList(ContextCompat.getColorStateList(MainActivity.this, R.color.colorSuccess));
+                    editText.setEnabled(false);
 
                     didCallAPIWithNoErrors = true;
                 } catch (Exception e) {
@@ -214,37 +225,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void launchSDK(View view) {
+        progressBar.setVisibility(View.VISIBLE);
         NDILogin.Build(this)
         .streamingUrl(STREAMING_URL)
         .sessionToken(sessionToken)
         .progress(progressResponse -> {
             Log.d("PROGRESS",String.valueOf(progressResponse.getProgress()));
+            progressBar.setProgress((int) progressResponse.getProgress(), true);
         })
         .launch(iproovResponse -> {
             if(iproovResponse.getReason() != null) {
 //              // CUSTOM UI Styles
                 Snackbar snackbar = Snackbar.make(view, iproovResponse.getReason(), 5000);
                 snackbar.show();
+
+                validateResult(view);
                 resetSession();
             } else if (iproovResponse.isSuccess()) {
-                hasSuccessfullyFaceVerified = validateResult();
-                Snackbar snackbar = Snackbar.make(view, "Success! You've face verified.", 5000);
-                snackbar.show();
+                validateResult(view);
+
             }
         });
     }
 
-    public boolean validateResult() {
+    public void validateResult(View view) {
         // Validates the results returned by
         // the SDK. This is to prevent
         // man-in-the-middle attacks
         // by verifying the results
         // from the trusted source
-
-        // Return boolean
-        boolean[] userHasPassed = new boolean[1];
-
-        Log.d("TODO", "Validate Result");
 
         JSONObject reqJSON = new JSONObject();
         try {
@@ -255,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
             didCallAPIWithNoErrors = false;
-            return false;
+            return;
         }
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
@@ -266,38 +275,80 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
-                        System.out.println(response);
-                        userHasPassed[0] = response.getBoolean("is_passed");
+                        hasSuccessfullyFaceVerified = response.getBoolean("is_passed");
 
-                        if (!userHasPassed[0]) {
-                            return;
+                        if (hasSuccessfullyFaceVerified) {
+                            Snackbar snackbar = Snackbar.make(view, "Face verification successful!", 5000);
+                            snackbar.show();
+
+                            labelText.setText("Successful validation!");
+                            actionButton.setText("SUCCESS");
+                            actionButton.setEnabled(false);
+
+                            startActivity(loginIntent);
                         } else {
-                            Log.d("Passed", response.getString("score"));
+                            Log.d("VALIDATE RESPONSE", response.toString());
+                            String score = response.get("score").toString();
+                            Snackbar snackbar = Snackbar.make(view, "Score: " + score + ". Face verification unsuccessful!", 5000);
+                            snackbar.show();
+                            resetSession();
                         }
+
+                        return;
                     } catch (Exception e) {
                         e.printStackTrace();
                         Log.d("ERROR", "error");
+                        return;
                     }
                 }
             }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d("ERROR", "error2");
+                int statusCode = error.networkResponse.statusCode;
+                String msg = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+
+                JSONObject jsonMsg = new JSONObject();
+                String errorDesc = "";
+                try {
+                    jsonMsg = new JSONObject(msg);
+                    errorDesc = jsonMsg.getString("error_description");
+                } catch (Exception e) {
+                    Log.d("Exception", "Line 281");
+                    e.printStackTrace();
+                }
+
+                Log.d("Response Code Error", Integer.toString(statusCode));
+                Log.d("Response Error Message", msg);
+                errorMessage = "Error Status: " + Integer.toString(statusCode) +
+                        ", " + errorDesc;
+
+                didCallAPIWithNoErrors = false;
+
+                Snackbar snackbar = Snackbar.make(view, "Face verification failed!" + errorMessage, 5000);
+                snackbar.show();
+
+                labelText.setText("Try again?");
+                actionButton.setText("Verify my identity");
+                editText.setEnabled(true);
+
+                return;
             }
         }
         );
 
         requestQueue.add(jsonObjectRequest);
 
-        labelText.setText("Try again?");
-        actionButton.setText("Verify my identity");
-        editText.setEnabled(true);
-
-        return userHasPassed[0] || false;
+        return;
     }
 
     public void resetSession() {
         sessionToken = "";
+        labelText.setText("Try again?");
+        actionButton.setText("Verify my identity");
+        actionButton.setBackgroundTintList(ContextCompat.getColorStateList(MainActivity.this, R.color.colorPrimary));
+        progressBar.setVisibility(View.INVISIBLE);
+        actionButton.setVisibility(View.VISIBLE);
+        editText.setEnabled(true);
     }
 
 //    =============== SDK METHODS ==================
