@@ -239,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar snackbar = Snackbar.make(view, iproovResponse.getReason(), 5000);
                 snackbar.show();
 
+                // Set force pass matching
                 if (nric.equals("G2957839M")) {
                     validateResult(view);
                 }
