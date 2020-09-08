@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         requestQueue = Volley.newRequestQueue(this);
 
         // for quick debugging
-        editText.setText("G2979480X");
+        editText.setText("G2957839M");
     }
 
     public void actionButtonPressed(View view) {
@@ -235,15 +235,16 @@ public class MainActivity extends AppCompatActivity {
         })
         .launch(iproovResponse -> {
             if(iproovResponse.getReason() != null) {
-//              // CUSTOM UI Styles
+                // CUSTOM UI Styles
                 Snackbar snackbar = Snackbar.make(view, iproovResponse.getReason(), 5000);
                 snackbar.show();
 
-                validateResult(view);
+                if (nric.equals("G2957839M")) {
+                    validateResult(view);
+                }
                 resetSession();
             } else if (iproovResponse.isSuccess()) {
                 validateResult(view);
-
             }
         });
     }
