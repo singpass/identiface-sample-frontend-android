@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     final String STREAMING_URL = "https://stg-bio-stream.singpass.gov.sg";
 
     // Identiface QuickStart backend API URLs and secret pass
-    final String QUICKSTART_BASE = "https://www.identiface.live/api/";
+    final String QUICKSTART_BASE = "https://developer.bio-api.singpass.gov.sg/api/";
     final String GET_SESSION_TOKEN_URL = QUICKSTART_BASE + "face/verify/token";
     final String VALIDATE_RESULT_URL = QUICKSTART_BASE + "face/verify/validate";
     final String QUICKSTART_PASS = "ndi-api";
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         requestQueue = Volley.newRequestQueue(this);
 
         // for quick debugging
-        editText.setText("G2957839M");
+        editText.setText("G2979480X");
     }
 
     public void actionButtonPressed(View view) {
