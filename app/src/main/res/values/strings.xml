@@ -7,7 +7,7 @@
 
     <!-- to customise the language -->
     <string name="iproov__language_file">en-GB</string>
-    <string name="iproov__prompt_genuine_presence_align_face">把你的脸放在圆圈内</string>
+    <string name="iproov__prompt_genuine_presence_align_face">Keep your face within the oval.</string>
     <string name="iproov__prompt_liveness_align_face">Fill the oval with your face</string>
     <string name="iproov__prompt_liveness_no_target">Put your face in the frame</string>
     <string name="iproov__prompt_connecting">Connecting…</string>

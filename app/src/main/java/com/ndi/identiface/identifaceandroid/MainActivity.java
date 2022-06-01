@@ -236,6 +236,11 @@ public class MainActivity extends AppCompatActivity {
         .launch(iproovResponse -> {
             if(iproovResponse.getReason() != null) {
                 // CUSTOM UI Styles
+                Log.i("iProovResponse Feedback Code",
+                        String.valueOf(iproovResponse.getFeedbackCode()));
+                Log.i("iProovResponse Exception",
+                        iproovResponse.getException().getClass().toString());
+                Log.i("iProovResponse reason", String.valueOf(iproovResponse.getReason()));
                 Snackbar snackbar = Snackbar.make(view, iproovResponse.getReason(), 5000);
                 snackbar.show();
 
@@ -256,7 +261,6 @@ public class MainActivity extends AppCompatActivity {
         // man-in-the-middle attacks
         // by verifying the results
         // from the trusted source
-
         JSONObject reqJSON = new JSONObject();
         try {
             reqJSON.put("user_id", nric);
